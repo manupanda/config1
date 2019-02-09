@@ -3,7 +3,7 @@ pipeline {
          stages {
                  stage('GitCheckout') {
                  steps {
-                     git 'https://github.com/bhanuprakashbg/BankWebApp'
+                     git 'https://github.com/manupanda/DevopsNew.git'
                  }
                  }
                  stage('Build') {
