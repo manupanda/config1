@@ -1,0 +1,53 @@
+properties = null  
+
+def loadProperties() {
+    node {
+        checkout scm
+        properties = new Properties()		
+        File propertiesFile = new File("${workspace}/Properties/pipeline.properties")
+        properties.load(propertiesFile.newDataInputStream())    
+	echo "Immediate one ${properties.appPath}"
+    }
+}
+
+node('master'){
+
+	stage ('load properties') {
+		script {
+			loadProperties()				
+		}
+	}
+
+	stage('Checkout') {
+		git "${properties.appPath}"
+	}	
+	
+	stage('Code Analysis') {
+		sh 'mvn sonar:sonar'
+	}
+	
+	stage('Build') {    
+		sh 'mvn clean install'
+	}
+
+	stage ('Artifactory') {
+		def server = Artifactory.newServer url:'http://localhost:8081/artifactory', username: 'admin', password: 'password'
+		def uploadSpec = """{
+		"files": [
+            {
+            "pattern": "*.war",
+            "target": "lib-staging"
+            }
+		]
+		}""" 
+		server.upload spec: uploadSpec		
+	}
+	
+	stage('Deploy') {    
+		sh 'ls -ltr target/*.war'
+		sh 'sudo cp target/*.war /home/devopsuser6/apache-tomcat-8.5.37/webapps'
+	}
+	
+}
+
+
